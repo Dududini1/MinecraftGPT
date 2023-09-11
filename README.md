@@ -1,6 +1,6 @@
 # MinecraftGPT
 
-- Spigot 1.20.1 plugin which implements an AI chat bot in Minecraft with a command, with the possibility of choosing a custom API, setting the API key and changing the AI model.
+- This is a Spigot 1.20.1 plugin which implements an AI chat bot in Minecraft with a command, with the possibility of choosing a custom API, setting the API key and changing the AI model.
 
 ## Commands
 - To see the available subcommands, just type "/mcgpt help" or "/minecraftgpt help".
