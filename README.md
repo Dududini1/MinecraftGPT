@@ -10,3 +10,7 @@
 
 ## In-game screenshot
 ![image](https://github.com/Dududini1/MinecraftGPT/assets/143443695/c914a3f9-ca6d-4b62-a0be-3881da74b47d)
+
+## TO-DO
+
+- [ ] Fix some exception errors.
