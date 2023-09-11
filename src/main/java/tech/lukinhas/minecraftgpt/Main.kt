@@ -1,5 +1,6 @@
 package tech.lukinhas.minecraftgpt
 
+import org.bukkit.Bukkit
 import org.bukkit.ChatColor
 import org.bukkit.command.Command
 import org.bukkit.command.CommandSender
@@ -9,8 +10,6 @@ import tech.lukinhas.minecraftgpt.Utils.OpenAI.chatCompletion
 import java.io.IOException
 import java.util.*
 
-
-@Suppress("DEPRECATION")
 class Main : JavaPlugin() {
     override fun onEnable() {
         saveDefaultConfig()
@@ -36,16 +35,19 @@ class Main : JavaPlugin() {
                     val model = getConfig().getString("model")!!
                     val url = getConfig().getString("url")!!
 
-                    try {
-                        val response = chatCompletion(model, key, message, url)
-                        if (sender is Player) {
-                            sender.sendMessage(ChatColor.GRAY.toString() + "[MinecraftGPT] " + ChatColor.WHITE + response)
-                        } else {
-                            sender.sendMessage(ChatColor.GRAY.toString() + "[MinecraftGPT] " + ChatColor.WHITE + response)
+                    Bukkit.getScheduler().runTaskAsynchronously(this, Runnable {
+                        try {
+                            val response = chatCompletion(model, key, message, url)
+                            val messageToSend = ChatColor.GRAY.toString() + "[MinecraftGPT] " + ChatColor.WHITE + response
+                            if (sender is Player) {
+                                sender.sendMessage(messageToSend)
+                            } else {
+                                sender.sendMessage(messageToSend)
+                            }
+                        } catch (e: IOException) {
+                            throw RuntimeException(e)
                         }
-                    } catch (e: IOException) {
-                        throw RuntimeException(e)
-                    }
+                    })
                 } else {
                     sender.sendMessage(ChatColor.GRAY.toString() + "[MinecraftGPT] " + ChatColor.WHITE + "Correct usage: /minecraftgpt chat <message>")
                 }
@@ -56,7 +58,7 @@ class Main : JavaPlugin() {
                     reloadConfig()
                     sender.sendMessage(ChatColor.GRAY.toString() + "[MinecraftGPT] " + ChatColor.WHITE + "The plugin was reloaded successfully.")
                 } catch (e: Exception) {
-                    sender.sendMessage(ChatColor.GRAY.toString() + "[MinecraftGPT] " + ChatColor.WHITE + "The plugin was not reloaded because of a error. Check the logs to see the problem.")
+                    sender.sendMessage(ChatColor.GRAY.toString() + "[MinecraftGPT] " + ChatColor.WHITE + "The plugin was not reloaded because of an error. Check the logs to see the problem.")
                 }
             } else if (args[0].equals("help", ignoreCase = true)) {
                 @Suppress("DEPRECATION")
@@ -73,7 +75,7 @@ class Main : JavaPlugin() {
         return false
     }
 
-    override fun onTabComplete(sender: CommandSender, command: Command, alias: String, args: Array<String>): List<String>? {
+    override fun onTabComplete(sender: CommandSender, command: Command, alias: String, args: Array<String>): List<String> {
         val completions: MutableList<String> = ArrayList()
         if (command.name.equals("minecraftgpt", ignoreCase = true)) {
             if (args.size == 1) {
