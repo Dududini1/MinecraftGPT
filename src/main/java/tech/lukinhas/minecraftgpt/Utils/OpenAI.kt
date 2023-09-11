@@ -19,7 +19,6 @@ object OpenAI {
     }
 
     fun chatCompletion(model: String, apiKey: String?, messages: List<Pair<String, String>>, url: String): String {
-
         val messagesMap = messages.map { pair ->
             mapOf("content" to pair.second, "role" to pair.first)
         }
@@ -43,13 +42,13 @@ object OpenAI {
             val input = json.toByteArray(StandardCharsets.UTF_8)
             os.write(input, 0, input.size)
         } catch (e: Exception) {
-            throw e
+            return "Request failed: ${e.message}"
         }
 
         val responseCode = connection.responseCode
 
         if (responseCode != HttpURLConnection.HTTP_OK) {
-            throw RuntimeException("Request failed with code: $responseCode")
+            return "Request failed with code: $responseCode"
         }
 
         val inputStream = BufferedReader(InputStreamReader(connection.inputStream))
@@ -61,10 +60,8 @@ object OpenAI {
         inputStream.close()
         connection.disconnect()
 
-        // Parse the JSON response
         val jsonResponse = Gson().fromJson(response.toString(), JsonObject::class.java)
 
-        // Extract the content from the first choice
         return jsonResponse.getAsJsonArray("choices")?.get(0)?.asJsonObject?.getAsJsonObject("message")?.get("content")?.asString
                 ?: ""
     }
