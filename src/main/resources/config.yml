@@ -1,0 +1,3 @@
+url: "" # Put the API base URL
+key: "" # Put the URL's API key here
+model: "gpt-3.5-turbo" # Put the desired AI model here.

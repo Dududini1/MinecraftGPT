@@ -1,0 +1,9 @@
+name: MinecraftGPT
+version: '${version}'
+main: tech.lukinhas.minecraftgpt.Main
+api-version: '1.20'
+commands:
+  minecraftgpt:
+    description: MinecraftGPT Command
+    usage: /minecraftgpt <subcommand>
+    aliases: mcgpt
