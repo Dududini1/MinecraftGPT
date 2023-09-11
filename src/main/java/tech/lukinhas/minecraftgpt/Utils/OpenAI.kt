@@ -2,10 +2,12 @@ package tech.lukinhas.minecraftgpt.Utils
 
 import com.google.gson.Gson
 import com.google.gson.JsonObject
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
+import java.io.BufferedReader
+import java.io.InputStreamReader
+import java.io.OutputStream
+import java.net.HttpURLConnection
+import java.net.URL
+import java.nio.charset.StandardCharsets
 import java.util.concurrent.TimeUnit
 
 object OpenAI {
@@ -18,12 +20,6 @@ object OpenAI {
 
     fun chatCompletion(model: String, apiKey: String?, messages: List<Pair<String, String>>, url: String): String {
 
-        val client = OkHttpClient().newBuilder()
-                .connectTimeout(30, TimeUnit.SECONDS)
-                .writeTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(30, TimeUnit.SECONDS)
-                .build()
-
         val messagesMap = messages.map { pair ->
             mapOf("content" to pair.second, "role" to pair.first)
         }
@@ -34,27 +30,42 @@ object OpenAI {
 
         val json = Gson().newBuilder().setPrettyPrinting().create().toJson(requestBody)
 
-        val request = Request.Builder()
-                .url(url)
-                .addHeader("Content-Type", "application/json")
-                .addHeader("Authorization", "Bearer ${apiKey ?: this.apiKey}")
-                .post(json.toRequestBody("application/json".toMediaType()))
-                .build()
+        val connection = URL(url).openConnection() as HttpURLConnection
+        connection.connectTimeout = TimeUnit.SECONDS.toMillis(30).toInt()
+        connection.readTimeout = TimeUnit.SECONDS.toMillis(30).toInt()
+        connection.requestMethod = "POST"
+        connection.setRequestProperty("Content-Type", "application/json")
+        connection.setRequestProperty("Authorization", "Bearer ${apiKey ?: this.apiKey}")
+        connection.doOutput = true
 
-        val response = client.newCall(request).execute()
-
-        if (!response.isSuccessful) {
-            throw RuntimeException("Request failed with code: ${response.code}")
+        try {
+            val os: OutputStream = connection.outputStream
+            val input = json.toByteArray(StandardCharsets.UTF_8)
+            os.write(input, 0, input.size)
+        } catch (e: Exception) {
+            throw e
         }
 
-        val responseBody = response.body?.string() ?: ""
+        val responseCode = connection.responseCode
+
+        if (responseCode != HttpURLConnection.HTTP_OK) {
+            throw RuntimeException("Request failed with code: $responseCode")
+        }
+
+        val inputStream = BufferedReader(InputStreamReader(connection.inputStream))
+        val response = StringBuilder()
+        var line: String?
+        while (inputStream.readLine().also { line = it } != null) {
+            response.append(line)
+        }
+        inputStream.close()
+        connection.disconnect()
 
         // Parse the JSON response
-        val jsonResponse = Gson().fromJson(responseBody, JsonObject::class.java)
+        val jsonResponse = Gson().fromJson(response.toString(), JsonObject::class.java)
 
         // Extract the content from the first choice
-
         return jsonResponse.getAsJsonArray("choices")?.get(0)?.asJsonObject?.getAsJsonObject("message")?.get("content")?.asString
-                ?: "".also { response.body?.close() }
+                ?: ""
     }
 }
