@@ -13,4 +13,4 @@
 
 ## TO-DO
 
-- [ ] Fix some exception errors.
+- [x] Fix some exception errors.
