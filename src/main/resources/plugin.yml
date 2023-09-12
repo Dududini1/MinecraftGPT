@@ -1,5 +1,5 @@
 name: MinecraftGPT
-version: '${version}'
+version: '1.3-SNAPSHOT'
 main: tech.lukinhas.minecraftgpt.Main
 api-version: '1.20'
 commands:
