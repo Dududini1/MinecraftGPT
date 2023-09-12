@@ -21,7 +21,7 @@ class Main : JavaPlugin() {
         if (command.name.equals("minecraftgpt", ignoreCase = true)) {
             when (args.getOrNull(0)?.toLowerCase()) {
                 null -> sender.sendMessage("${ChatColor.GRAY}[MinecraftGPT] ${ChatColor.WHITE}Use /minecraftgpt help to see the available subcommands.")
-                "chat" -> handleChatCommand(sender, args)
+                "chat" -> return handleChatCommand(sender, args)
                 "version" -> sender.sendMessage("${ChatColor.GRAY}[MinecraftGPT] ${ChatColor.WHITE}The plugin version is ${ChatColor.DARK_GRAY}${description.version}")
                 "reload" -> handleReloadCommand(sender)
                 "help" -> showHelp(sender)
@@ -32,25 +32,26 @@ class Main : JavaPlugin() {
         return false
     }
 
-    private fun handleChatCommand(sender: CommandSender, args: Array<String>) {
-        if (args.size >= 2) {
-            val message = listOf("user" to args.drop(1).joinToString(" "))
-            val key = config.getString("key")!!
-            val model = config.getString("model")!!
-            val url = config.getString("url")!!
-
-            Bukkit.getScheduler().runTaskAsynchronously(this) { _: BukkitTask ->
-                try {
-                    val response = chatCompletion(model, key, message, url)
-                    val messageToSend = "${ChatColor.GRAY}[MinecraftGPT] ${ChatColor.WHITE}$response"
-                    sender.sendMessage(messageToSend)
-                } catch (e: IOException) {
-                    throw RuntimeException(e)
-                }
-            }
-        } else {
-            sender.sendMessage("${ChatColor.GRAY}[MinecraftGPT] ${ChatColor.WHITE}Correct usage: /minecraftgpt chat <message>")
+    private fun handleChatCommand(sender: CommandSender, args: Array<String>): Boolean {
+        if (args.isEmpty()) {
+            return false
         }
+        val message = listOf("user" to args.drop(1).joinToString(" "))
+        val key = config.getString("key")!!
+        val model = config.getString("model")!!
+        val url = config.getString("url")!!
+
+        Bukkit.getScheduler().runTaskAsynchronously(this) { _: BukkitTask ->
+            try {
+                sender.sendMessage("${ChatColor.GRAY}[MinecraftGPT] ${ChatColor.WHITE}Asking to the AI...")
+                val response = chatCompletion(model, key, message, url)
+                val messageToSend = "${ChatColor.GRAY}[MinecraftGPT] ${ChatColor.WHITE}$response"
+                sender.sendMessage(messageToSend)
+            } catch (e: IOException) {
+                throw RuntimeException(e)
+            }
+        }
+        return true
     }
 
     private fun handleReloadCommand(sender: CommandSender) {
