@@ -48,7 +48,7 @@ object OpenAI {
             val jsonResponse = Gson().fromJson(response.body?.string(), JsonObject::class.java)
 
             return jsonResponse.getAsJsonArray("choices")?.get(0)?.asJsonObject?.getAsJsonObject("message")?.get("content")?.asString
-                    ?: ""
+                    ?: "".also { response.body?.close() }
         } catch (e: Exception) {
             return "Request failed: ${e.message}"
         }
