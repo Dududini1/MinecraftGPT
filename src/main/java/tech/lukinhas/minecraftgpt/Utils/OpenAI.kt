@@ -2,11 +2,8 @@ package tech.lukinhas.minecraftgpt.Utils
 
 import com.google.gson.Gson
 import com.google.gson.JsonObject
-import java.io.BufferedReader
-import java.io.InputStreamReader
-import java.io.OutputStream
-import java.net.HttpURLConnection
-import java.net.URL
+import okhttp3.*
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.TimeUnit
 
@@ -29,40 +26,31 @@ object OpenAI {
 
         val json = Gson().newBuilder().setPrettyPrinting().create().toJson(requestBody)
 
-        val connection = URL(url).openConnection() as HttpURLConnection
-        connection.connectTimeout = TimeUnit.SECONDS.toMillis(30).toInt()
-        connection.readTimeout = TimeUnit.SECONDS.toMillis(30).toInt()
-        connection.requestMethod = "POST"
-        connection.setRequestProperty("Content-Type", "application/json")
-        connection.setRequestProperty("Authorization", "Bearer ${apiKey ?: this.apiKey}")
-        connection.doOutput = true
+        val client = OkHttpClient.Builder()
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .build()
+
+        val request = Request.Builder()
+                .url(url)
+                .post(RequestBody.create("application/json".toMediaTypeOrNull(), json))
+                .addHeader("Content-Type", "application/json")
+                .addHeader("Authorization", "Bearer ${apiKey ?: this.apiKey}")
+                .build()
 
         try {
-            val os: OutputStream = connection.outputStream
-            val input = json.toByteArray(StandardCharsets.UTF_8)
-            os.write(input, 0, input.size)
+            val response = client.newCall(request).execute()
+
+            if (!response.isSuccessful) {
+                return "Request failed with code: ${response.code}"
+            }
+
+            val jsonResponse = Gson().fromJson(response.body?.string(), JsonObject::class.java)
+
+            return jsonResponse.getAsJsonArray("choices")?.get(0)?.asJsonObject?.getAsJsonObject("message")?.get("content")?.asString
+                    ?: ""
         } catch (e: Exception) {
             return "Request failed: ${e.message}"
         }
-
-        val responseCode = connection.responseCode
-
-        if (responseCode != HttpURLConnection.HTTP_OK) {
-            return "Request failed with code: $responseCode"
-        }
-
-        val inputStream = BufferedReader(InputStreamReader(connection.inputStream))
-        val response = StringBuilder()
-        var line: String?
-        while (inputStream.readLine().also { line = it } != null) {
-            response.append(line)
-        }
-        inputStream.close()
-        connection.disconnect()
-
-        val jsonResponse = Gson().fromJson(response.toString(), JsonObject::class.java)
-
-        return jsonResponse.getAsJsonArray("choices")?.get(0)?.asJsonObject?.getAsJsonObject("message")?.get("content")?.asString
-                ?: ""
     }
 }
