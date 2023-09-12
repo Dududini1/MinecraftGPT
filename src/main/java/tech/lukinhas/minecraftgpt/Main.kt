@@ -1,5 +1,3 @@
-@file:Suppress("DEPRECATION")
-
 package tech.lukinhas.minecraftgpt
 
 import org.bukkit.Bukkit
